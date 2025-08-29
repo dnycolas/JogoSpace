@@ -17,9 +17,9 @@ public class Municao : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player") || other.CompareTag("Parede"))
+        if (other.CompareTag("Player") || other.CompareTag("Wall"))
         {
-            Debug.Log("Bala colidiu com: " + other.name);
+            Debug.Log("Bala colidiu com " + other.name);
             Destroy(gameObject);
         }
     }
