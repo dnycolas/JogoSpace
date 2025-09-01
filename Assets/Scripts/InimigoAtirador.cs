@@ -83,12 +83,12 @@ public class InimigoAtirador : InimigoBasico
 
             Vida--;
 
-            if (Vida == 0)
+            if (Vida <= 0)
             {
-
+                GameManager.instance.AddKill(); // avisa que matou
                 Destroy(gameObject);
-
             }
+
 
         }
     }

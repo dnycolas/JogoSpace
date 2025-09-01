@@ -763,7 +763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Player: {fileID: 1305822340}
-  speed: 3
+  speed: 2
   detectionRange: 5
   attackRange: 1
   reactionTime: 0.5
@@ -1460,6 +1460,7 @@ MonoBehaviour:
   MunicaoPlayer: {fileID: 2609200214962578790, guid: 72812c4aa194bbf4aba11bd296eeaf6c, type: 3}
   PontoDeTiro: {fileID: 1365053894}
   offset: 1
+  damageCooldown: 1
 --- !u!50 &1305822344
 Rigidbody2D:
   serializedVersion: 4
@@ -2046,6 +2047,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e1d8e7a40429e1840ba8133759fb9e3a, type: 3}
+--- !u!1 &1903368981
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1903368982}
+  m_Layer: 0
+  m_Name: ContadorDePontos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1903368982
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1903368981}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.21298862, y: -0.6720974, z: 0.024138726}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1583015911836566597
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2326,3 +2358,4 @@ SceneRoots:
   - {fileID: 1029925630}
   - {fileID: 1705460268}
   - {fileID: 706054130}
+  - {fileID: 1903368982}

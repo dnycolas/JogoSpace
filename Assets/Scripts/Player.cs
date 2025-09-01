@@ -10,96 +10,82 @@ public class Player : MonoBehaviour
     private bool isGrounded;
     private bool onWall;
 
-    public HpPoint hp; // referência ao script que controla os corações
+    public HpPoint hp;
 
-    public int vidasExtra = 3;        // vidas extras (o contador)
-    public TMP_Text vidasText;        // UI do contador de vidas (TMP)
+    public int vidasExtra = 3;
+    public TMP_Text vidasText;
 
-    private Vector2 Respawn;          // posição inicial pra respawn
+    private Vector2 Respawn;
 
-    public GameObject MunicaoPlayer;  // prefab da munição
-    public Transform PontoDeTiro;     // ponto de onde a bala nasce
-    public float offset = 1f;         // distância do ponto de tiro do player
+    public GameObject MunicaoPlayer;
+    public Transform PontoDeTiro;
+    public float offset = 1f;
 
-    private Vector2 direcaoTiro = Vector2.right; // direção inicial do tiro = direita
+    private Vector2 direcaoTiro = Vector2.right;
+
+    // === TIMER DE DANO ===
+    public float damageCooldown = 1f; // tempo de espera (1s)
+    private float lastDamageTime = -10f;
+
+
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         Respawn = transform.position;
-
-        AtualizarVidasUI(); // mostra logo as vidas na tela
+        AtualizarVidasUI();
     }
 
     void Update()
     {
         float move = Input.GetAxisRaw("Horizontal");
 
-        // Movimento
         if (onWall && move != 0)
-        {
             rb.velocity = new Vector2(0, rb.velocity.y);
-        }
         else
-        {
             rb.velocity = new Vector2(move * speed, rb.velocity.y);
-        }
 
-        // Pulo
         if (Input.GetButtonDown("Jump") && isGrounded)
-        {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        }
 
-        // Respawn se zerar a vida
         if (hp.Vida <= 0)
-        {
             RespawnPlayer();
-        }
 
-        // ====== DIREÇÃO DO TIRO (WASD) ======
-        if (Input.GetKey(KeyCode.W))
-            direcaoTiro = Vector2.up * 1;
-        else if (Input.GetKey(KeyCode.S))
-            direcaoTiro = Vector2.down;
-        else if (Input.GetKey(KeyCode.A))
-            direcaoTiro = Vector2.left * 1;
-        else if (Input.GetKey(KeyCode.D))
-            direcaoTiro = Vector2.right * 1;
+        // Direção do tiro (WASD)
+        if (Input.GetKey(KeyCode.W)) direcaoTiro = Vector2.up;
+        else if (Input.GetKey(KeyCode.S)) direcaoTiro = Vector2.down;
+        else if (Input.GetKey(KeyCode.A)) direcaoTiro = Vector2.left;
+        else if (Input.GetKey(KeyCode.D)) direcaoTiro = Vector2.right;
 
-        // Atualiza posição e rotação do ponto de tiro
         PontoDeTiro.localPosition = direcaoTiro * offset;
-        float angle = Mathf.Atan2(direcaoTiro.y, direcaoTiro.x) * Mathf.Rad2Deg ;
+        float angle = Mathf.Atan2(direcaoTiro.y, direcaoTiro.x) * Mathf.Rad2Deg;
         PontoDeTiro.rotation = Quaternion.Euler(0, 0, angle);
 
-        // ====== ATIRAR ======
+        // Atirar
         if (Input.GetMouseButtonDown(0))
-        {
             Instantiate(MunicaoPlayer, PontoDeTiro.position, PontoDeTiro.rotation);
-        }
     }
 
     public void RespawnPlayer()
     {
-        transform.position = Respawn;      // volta posição
-        rb.velocity = Vector2.zero;       // zera velocidade
-        hp.Vida = hp.NumCoracoes;         // recupera corações
+        transform.position = Respawn;
+        rb.velocity = Vector2.zero;
+        hp.Vida = hp.NumCoracoes;
 
-        vidasExtra--;                     // perde uma vida extra
+        vidasExtra--;
         AtualizarVidasUI();
 
         if (vidasExtra < 0)
         {
-            Destroy(gameObject);          // game over
+            UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
         }
+
     }
 
     void AtualizarVidasUI()
     {
         if (vidasExtra != -1 && vidasText != null)
-        {
             vidasText.text = "x " + vidasExtra;
-        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -122,15 +108,22 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Shot") || other.CompareTag("EnemieShotter"))
+        // Só toma dano se passou o cooldown
+        if (Time.time - lastDamageTime >= damageCooldown)
         {
-            hp.Vida--;
-            Destroy(other.gameObject); // bala some
-        }
-        else if (other.CompareTag("Enemie"))
-        {
-            hp.Vida--; // só perde vida, inimigo continua vivo
+            if (other.CompareTag("Shot") || other.CompareTag("EnemieShotter"))
+            {
+                hp.Vida--;
+                Destroy(other.gameObject); // destrói a bala
+                lastDamageTime = Time.time; // registra o último hit
+            }
+            else if (other.CompareTag("Enemie"))
+            {
+                hp.Vida--;
+                lastDamageTime = Time.time; // registra o último hit
+            }
         }
     }
 
+    
 }
