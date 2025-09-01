@@ -25,4 +25,13 @@ public class Munição : MonoBehaviour
         Destroy(gameObject);
 
     }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Enemie") || other.CompareTag("EnemieShotter") || other.CompareTag("Wall") || other.CompareTag("Ground"))
+        {
+            Debug.Log("Bala colidiu com " + other.name);
+            Destroy(gameObject);
+        }
+    }
 }

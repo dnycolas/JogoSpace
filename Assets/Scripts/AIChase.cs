@@ -11,6 +11,10 @@ public class AIChase : MonoBehaviour
     private float distance;
     private float attackTimer = 0f;
 
+    public float Vida = 2;
+
+  
+
     void Update()
     {
         distance = Vector2.Distance(transform.position, Player.transform.position);
@@ -30,6 +34,7 @@ public class AIChase : MonoBehaviour
                 // Aqui você coloca o ataque (ex: dano, animação)
                 Debug.Log("Atacou!");
                 attackTimer = 0f; // reseta o timer
+           
             }
         }
         else
@@ -37,5 +42,25 @@ public class AIChase : MonoBehaviour
             // Se o player sair da detecção, resetar timer
             attackTimer = 0f;
         }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("ShotPlayer")) 
+        {
+
+            Vida--;
+
+            if (Vida <= 0) 
+            {
+
+                Destroy(gameObject);
+
+            }
+        
+        }
+
+        
+        
     }
 }

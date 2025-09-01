@@ -8,6 +8,8 @@ public class InimigoBasico : MonoBehaviour
     private int direction = 1;     // 1 = direita, -1 = esquerda
     private float timer;
 
+    public float Vida = 2; 
+
     void Start()
     {
         timer = moveTime;          // inicia o timer
@@ -27,5 +29,24 @@ public class InimigoBasico : MonoBehaviour
             direction *= -1;
             timer = moveTime;
         }
+    }
+
+    public void OnTriggerEnter2D(Collider2D collision)
+    {
+            
+        if (collision.CompareTag("ShotPlayer")) 
+        {
+
+            Vida--;
+
+            if (Vida == 0) 
+            {
+            
+                Destroy(gameObject);    
+            
+            }
+        
+        }
+
     }
 }

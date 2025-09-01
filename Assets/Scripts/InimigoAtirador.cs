@@ -22,6 +22,14 @@ public class InimigoAtirador : InimigoBasico
     public float StartTimeBtwnShots;
     private float timeBtwnShots;
 
+
+     public void Start()
+    {
+
+        base.Vida = Vida + 1 ;
+
+    }
+
     void Update()
     {
         // distância horizontal entre inimigo e player
@@ -63,6 +71,25 @@ public class InimigoAtirador : InimigoBasico
             {
                 timeBtwnShots -= Time.deltaTime;
             }
+        }
+
+        
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("ShotPlayer"))
+        {
+
+            Vida--;
+
+            if (Vida == 0)
+            {
+
+                Destroy(gameObject);
+
+            }
+
         }
     }
 
