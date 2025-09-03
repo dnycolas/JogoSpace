@@ -54,10 +54,15 @@ public class AIChase : MonoBehaviour
             if (Vida <= 0) 
             {
 
+                
+           
+                GameManager.instance.AddKill(); // soma kill
                 Destroy(gameObject);
+                
+
 
             }
-        
+
         }
 
         

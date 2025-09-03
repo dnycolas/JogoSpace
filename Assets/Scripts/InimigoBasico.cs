@@ -41,7 +41,8 @@ public class InimigoBasico : MonoBehaviour
 
             if (Vida == 0) 
             {
-            
+
+                GameManager.instance.AddKill(); // soma kill
                 Destroy(gameObject);    
             
             }

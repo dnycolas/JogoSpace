@@ -4,11 +4,10 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
-    public int killCount = 0;
+    private int kills = 0;
 
     void Awake()
     {
-        // garante que só exista 1 GameManager
         if (instance == null)
         {
             instance = this;
@@ -22,16 +21,16 @@ public class GameManager : MonoBehaviour
 
     public void AddKill()
     {
-        killCount++;
+        kills++;
     }
 
     public int GetKills()
     {
-        return killCount;
+        return kills;
     }
 
     public void ResetKills()
     {
-        killCount = 0;
+        kills = 0;
     }
 }
