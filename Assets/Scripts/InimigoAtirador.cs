@@ -4,101 +4,163 @@ using UnityEngine;
 
 public class InimigoAtirador : InimigoBasico
 {
-    public GameObject Player;
-    public float rangedVisionEnemie = 4f; // Alcance horizontal de detecção
-
+    [Header("Referências")]
     public Transform player;
     public Transform ShotPoint;
-    public Transform gun;
-
     public GameObject TiroEnemie;
 
-    public bool Alcance;
+    [Header("Spritesheet Animations")]
+    public Sprite[] idleFrames;
+    public Sprite[] walkFrames;
+    public Sprite[] shootFrames;
+    public Sprite[] dieFrames;
+    public float frameRate = 0.15f;
 
-    public float AlcanceTiro;
+    [Header("Patrulha")]
+    public float patrolRange = 3f;
+    public float speed = 1.5f;
+    public float pauseDuration = 1f;
 
-    public float distanceX;
+    [Header("Detecção / Tiro")]
+    public float rangedVisionEnemie = 6f;
+    public float verticalTolerance = 0.5f;
+    public float AlcanceTiro = 4f;
+    public float StartTimeBtwnShots = 1.2f;
+    public float projectileSpeed = 10f;
 
-    public float StartTimeBtwnShots;
-    private float timeBtwnShots;
+    private float startX;
+    private bool patrolRight = true;
+    private float pauseTimer = 0f;
+    private float timeBtwnShots = 0f;
+    private SpriteRenderer sr;
 
+    private enum State { Idle, Walk, Shoot, Die }
+    private State currentState = State.Idle;
 
-     public void Start()
+    private Sprite[] currentFrames;
+    private int currentFrameIndex = 0;
+    private float frameTimer = 0f;
+
+    void Start()
     {
+        if (player == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) player = p.transform;
+        }
 
-        base.Vida = Vida + 1 ;
-
+        startX = transform.position.x;
+        sr = GetComponent<SpriteRenderer>();
     }
 
     void Update()
     {
-        // distância horizontal entre inimigo e player
-        distanceX = Mathf.Abs(Player.transform.position.x - transform.position.x);
+        if (player == null) return;
 
-        speed = 1f;
+        float distanceX = Mathf.Abs(player.position.x - transform.position.x);
+        float distanceY = Mathf.Abs(player.position.y - transform.position.y);
 
-        // se estiver dentro do alcance horizontal e quase na mesma altura
-        if (distanceX <= rangedVisionEnemie && Mathf.Abs(Player.transform.position.y - transform.position.y) < 0.5f)
+        bool inRange = (distanceX <= rangedVisionEnemie && distanceY <= verticalTolerance);
+
+        if (currentState != State.Die)
         {
-            moveTime = 0f;
-            Alcance = true;
+            if (inRange)
+            {
+                currentState = State.Shoot;
+                FaceTowards(player.position.x);
+                Atirar();
+            }
+            else
+            {
+                Patrulhar();
+            }
         }
+
+        if (timeBtwnShots > 0f) timeBtwnShots -= Time.deltaTime;
+        if (pauseTimer > 0f) pauseTimer -= Time.deltaTime;
+
+        UpdateAnimation();
+    }
+
+    void FaceTowards(float targetX)
+    {
+        if (targetX > transform.position.x)
+            transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         else
+            transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+    }
+
+    void Patrulhar()
+    {
+        if (pauseTimer > 0f)
         {
-            Alcance = false;
-            moveTime = 2f;
-            base.Update();
+            currentState = State.Idle;
+            return;
         }
 
-        if (Player.transform.position.x > transform.position.x)
-        {
-            ShotPoint.rotation = Quaternion.Euler(0, 0, 0);   // direita
-        }
-        else
-        {
-            ShotPoint.rotation = Quaternion.Euler(0, 180, 0); // esquerda
-        }
+        currentState = State.Walk;
 
-        // Atira se estiver no alcance
+        float dir = patrolRight ? 1f : -1f;
+        transform.Translate(Vector2.right * dir * speed * Time.deltaTime);
+
+        if (transform.position.x >= startX + patrolRange && patrolRight)
+        {
+            patrolRight = false;
+            pauseTimer = pauseDuration;
+            currentState = State.Idle;
+            FaceTowards(transform.position.x - 1f);
+        }
+        else if (transform.position.x <= startX - patrolRange && !patrolRight)
+        {
+            patrolRight = true;
+            pauseTimer = pauseDuration;
+            currentState = State.Idle;
+            FaceTowards(transform.position.x + 1f);
+        }
+    }
+
+    void Atirar()
+    {
         if (Vector2.Distance(transform.position, player.position) <= AlcanceTiro)
         {
             if (timeBtwnShots <= 0f)
             {
-                Instantiate(TiroEnemie, ShotPoint.position, ShotPoint.rotation);
+                GameObject bala = Instantiate(TiroEnemie, ShotPoint.position, Quaternion.identity);
+
+                Rigidbody2D rb = bala.GetComponent<Rigidbody2D>();
+                if (rb != null)
+                {
+                    Vector2 direcao = (player.position - ShotPoint.position).normalized;
+                    rb.velocity = direcao * projectileSpeed;
+
+                    float angle = Mathf.Atan2(direcao.y, direcao.x) * Mathf.Rad2Deg;
+                    bala.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+                }
+
                 timeBtwnShots = StartTimeBtwnShots;
             }
-            else
-            {
-                timeBtwnShots -= Time.deltaTime;
-            }
         }
-
-        
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    void UpdateAnimation()
     {
-        if (collision.CompareTag("ShotPlayer"))
+        switch (currentState)
         {
-
-            Vida--;
-
-            if (Vida <= 0)
-            {
-                GameManager.instance.AddKill(); // avisa que matou
-                Destroy(gameObject);
-            }
-
-
+            case State.Idle: currentFrames = idleFrames; break;
+            case State.Walk: currentFrames = walkFrames; break;
+            case State.Shoot: currentFrames = shootFrames; break;
+            case State.Die: currentFrames = dieFrames; break;
         }
-    }
 
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, rangedVisionEnemie);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, AlcanceTiro);
+        if (currentFrames != null && currentFrames.Length > 0)
+        {
+            frameTimer += Time.deltaTime;
+            if (frameTimer >= frameRate)
+            {
+                frameTimer = 0f;
+                currentFrameIndex = (currentFrameIndex + 1) % currentFrames.Length;
+                sr.sprite = currentFrames[currentFrameIndex];
+            }
+        }
     }
 }

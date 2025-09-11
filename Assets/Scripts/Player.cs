@@ -34,6 +34,9 @@ public class Player : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         Respawn = transform.position;
         AtualizarVidasUI();
+
+        Debug.Log("VIDA INICIAL: " + hp.Vida);
+        Debug.Log("NUM CORACOES: " + hp.NumCoracoes);
     }
 
     void Update()
@@ -124,6 +127,7 @@ public class Player : MonoBehaviour
             }
         }
     }
+
 
     
 }
