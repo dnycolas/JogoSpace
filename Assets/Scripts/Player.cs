@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
-using TMPro; // ← Importante pra usar TextMeshPro
+using TMPro;
 
 public class Player : MonoBehaviour
 {
+    [Header("Movimento")]
     public float speed = 5f;
     public float jumpForce = 10f;
 
@@ -10,30 +11,45 @@ public class Player : MonoBehaviour
     private bool isGrounded;
     private bool onWall;
 
+    [Header("Vida")]
     public HpPoint hp;
-
     public int vidasExtra = 3;
     public TMP_Text vidasText;
-
     private Vector2 Respawn;
 
+    [Header("Tiro")]
     public GameObject MunicaoPlayer;
     public Transform PontoDeTiro;
     public float offset = 1f;
-
     private Vector2 direcaoTiro = Vector2.right;
 
-    // === TIMER DE DANO ===
-    public float damageCooldown = 1f; // tempo de espera (1s)
+    [Header("Cooldown de Dano")]
+    public float damageCooldown = 1f;
     private float lastDamageTime = -10f;
 
+    [Header("Sprites de Animação")]
+    public Sprite[] idleFrames;
+    public Sprite[] walkFrames;
+    public Sprite[] jumpFrames;
+    public Sprite[] shootFrames;
+    public Sprite[] dieFrames;
+    public float frameRate = 0.15f;
 
+    private SpriteRenderer sr;
+    private int currentFrame;
+    private float frameTimer;
+    private Sprite[] currentAnimation;
+
+    private enum State { Idle, Walk, Jump, Shoot, Die }
+    private State currentState = State.Idle;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        sr = GetComponent<SpriteRenderer>();
         Respawn = transform.position;
         AtualizarVidasUI();
+        TrocarAnimacao(idleFrames);
 
         Debug.Log("VIDA INICIAL: " + hp.Vida);
         Debug.Log("NUM CORACOES: " + hp.NumCoracoes);
@@ -41,6 +57,8 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        if (currentState == State.Die) return; // não faz nada morto
+
         float move = Input.GetAxisRaw("Horizontal");
 
         if (onWall && move != 0)
@@ -52,7 +70,10 @@ public class Player : MonoBehaviour
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
         if (hp.Vida <= 0)
-            RespawnPlayer();
+        {
+            Morrer();
+            return;
+        }
 
         // Direção do tiro (WASD)
         if (Input.GetKey(KeyCode.W)) direcaoTiro = Vector2.up;
@@ -66,7 +87,85 @@ public class Player : MonoBehaviour
 
         // Atirar
         if (Input.GetMouseButtonDown(0))
+        {
             Instantiate(MunicaoPlayer, PontoDeTiro.position, PontoDeTiro.rotation);
+            SetState(State.Shoot);
+        }
+
+        // === Atualiza animação ===
+        if (currentState != State.Shoot) // tiro não é interrompido até acabar
+        {
+            if (!isGrounded)
+                SetState(State.Jump);
+            else if (move != 0)
+            {
+                SetState(State.Walk);
+                sr.flipX = move < 0;
+            }
+            else
+                SetState(State.Idle);
+        }
+
+        RodarAnimacao();
+    }
+
+    void SetState(State newState)
+    {
+        if (currentState == newState) return;
+        currentState = newState;
+
+        switch (currentState)
+        {
+            case State.Idle: TrocarAnimacao(idleFrames); break;
+            case State.Walk: TrocarAnimacao(walkFrames); break;
+            case State.Jump: TrocarAnimacao(jumpFrames); break;
+            case State.Shoot: TrocarAnimacao(shootFrames, true); break;
+            case State.Die: TrocarAnimacao(dieFrames, true); break;
+        }
+    }
+
+    void TrocarAnimacao(Sprite[] novaAnimacao, bool reiniciar = false)
+    {
+        if (currentAnimation == novaAnimacao && !reiniciar) return;
+        currentAnimation = novaAnimacao;
+        currentFrame = 0;
+        frameTimer = 0f;
+        if (currentAnimation.Length > 0)
+            sr.sprite = currentAnimation[0];
+    }
+
+    void RodarAnimacao()
+    {
+        if (currentAnimation == null || currentAnimation.Length == 0) return;
+
+        frameTimer += Time.deltaTime;
+        if (frameTimer >= frameRate)
+        {
+            frameTimer = 0f;
+            currentFrame++;
+
+            // animação de tiro volta para Idle no fim
+            if (currentState == State.Shoot && currentFrame >= currentAnimation.Length)
+            {
+                SetState(State.Idle);
+                return;
+            }
+
+            // animação de morte para no último frame
+            if (currentState == State.Die && currentFrame >= currentAnimation.Length)
+            {
+                currentFrame = currentAnimation.Length - 1;
+            }
+
+            sr.sprite = currentAnimation[currentFrame % currentAnimation.Length];
+        }
+    }
+
+    void Morrer()
+    {
+        rb.velocity = Vector2.zero;
+        SetState(State.Die);
+        Invoke(nameof(RespawnPlayer), 1.5f); // respawn depois de 1.5s (ou troca cena)
     }
 
     public void RespawnPlayer()
@@ -82,7 +181,10 @@ public class Player : MonoBehaviour
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
         }
-
+        else
+        {
+            SetState(State.Idle);
+        }
     }
 
     void AtualizarVidasUI()
@@ -111,23 +213,19 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Só toma dano se passou o cooldown
         if (Time.time - lastDamageTime >= damageCooldown)
         {
             if (other.CompareTag("Shot") || other.CompareTag("EnemieShotter"))
             {
                 hp.Vida--;
-                Destroy(other.gameObject); // destrói a bala
-                lastDamageTime = Time.time; // registra o último hit
+                Destroy(other.gameObject);
+                lastDamageTime = Time.time;
             }
             else if (other.CompareTag("Enemie"))
             {
                 hp.Vida--;
-                lastDamageTime = Time.time; // registra o último hit
+                lastDamageTime = Time.time;
             }
         }
     }
-
-
-    
 }
