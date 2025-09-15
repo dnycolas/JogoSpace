@@ -20,7 +20,7 @@ public class Player : MonoBehaviour
     [Header("Tiro")]
     public GameObject MunicaoPlayer;
     public Transform PontoDeTiro;
-    public float offset = 1f;
+    
     private Vector2 direcaoTiro = Vector2.right;
 
     [Header("Cooldown de Dano")]
@@ -81,7 +81,6 @@ public class Player : MonoBehaviour
         else if (Input.GetKey(KeyCode.A)) direcaoTiro = Vector2.left;
         else if (Input.GetKey(KeyCode.D)) direcaoTiro = Vector2.right;
 
-        PontoDeTiro.localPosition = direcaoTiro * offset;
         float angle = Mathf.Atan2(direcaoTiro.y, direcaoTiro.x) * Mathf.Rad2Deg;
         PontoDeTiro.rotation = Quaternion.Euler(0, 0, angle);
 
@@ -101,6 +100,11 @@ public class Player : MonoBehaviour
             {
                 SetState(State.Walk);
                 sr.flipX = move < 0;
+
+                // 🔥 Espelha o ponto de tiro junto com o sprite
+                Vector3 pos = PontoDeTiro.localPosition;
+                pos.x = Mathf.Abs(pos.x) * (sr.flipX ? -1 : 1);
+                PontoDeTiro.localPosition = pos;
             }
             else
                 SetState(State.Idle);
