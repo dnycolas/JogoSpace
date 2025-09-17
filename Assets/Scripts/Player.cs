@@ -101,7 +101,7 @@ public class Player : MonoBehaviour
                 SetState(State.Walk);
                 sr.flipX = move < 0;
 
-                // 🔥 Espelha o ponto de tiro junto com o sprite
+                // Espelha o ponto de tiro junto com o sprite
                 Vector3 pos = PontoDeTiro.localPosition;
                 pos.x = Mathf.Abs(pos.x) * (sr.flipX ? -1 : 1);
                 PontoDeTiro.localPosition = pos;
@@ -230,6 +230,17 @@ public class Player : MonoBehaviour
                 hp.Vida--;
                 lastDamageTime = Time.time;
             }
+            else if (other.CompareTag("Trap")) // 👈 dano vindo da Trap
+            {
+                hp.Vida--;
+                lastDamageTime = Time.time;
+
+                // Knockback (empurra pra trás + um pulinho)
+                Vector2 knockbackDir = (transform.position - other.transform.position).normalized;
+                rb.velocity = new Vector2(knockbackDir.x * 5f, 5f);
+                // ajuste os valores (5f, 5f) conforme achar melhor
+            }
         }
     }
+
 }

@@ -10,6 +10,7 @@ TagManager:
   - ShotPlayer
   - Enemie
   - EnemieShotter
+  - Trap
   layers:
   - Default
   - TransparentFX

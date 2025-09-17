@@ -1,13 +1,17 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class InimigoBasico : MonoBehaviour
 {
-    public float speed = 2f;       // velocidade do inimigo
-    public float moveTime = 2f;    // tempo que ele anda em cada direção
+    [Header("MovimentaÃ§Ã£o")]
+    public float speed = 2f;         // velocidade normal
+    public float boostedSpeed = 4f; // velocidade quando "vÃª" o player
+    public float moveTime = 2f;     // tempo que ele anda em cada direÃ§Ã£o
+    public float detectionRange = 3f; // distÃ¢ncia para detectar o player
 
-    private int direction = 1;     // 1 = direita, -1 = esquerda
+    private int direction = 1;      // 1 = direita, -1 = esquerda
     private float timer;
 
+    [Header("Vida")]
     public float Vida = 2;
 
     [Header("Sprites Andando")]
@@ -15,44 +19,57 @@ public class InimigoBasico : MonoBehaviour
     [Header("Sprites Morte")]
     public Sprite[] deathFrames;
 
-    public float frameRate = 0.15f; // tempo entre cada frame
+    public float frameRate = 0.15f;
     private float frameTimer = 0f;
     private int currentFrame = 0;
 
     private SpriteRenderer sr;
     private bool isDead = false;
 
+    private Transform player; // referÃªncia ao player (busca por tag "Player")
+
     void Start()
     {
         sr = GetComponent<SpriteRenderer>();
         timer = moveTime;
+
+        // tenta achar o player por tag; garanta que o player tem tag "Player"
+        GameObject obj = GameObject.FindGameObjectWithTag("Player");
+        if (obj != null) player = obj.transform;
     }
 
     void Update()
     {
         if (isDead)
         {
-            Animate(deathFrames, false); // toca a animação de morte só uma vez
+            Animate(deathFrames, false); // animaÃ§Ã£o de morte (sÃ³ uma vez)
             return;
         }
 
-        // movimento para os lados
-        transform.position += new Vector3(direction * speed * Time.deltaTime, 0, 0);
+        // decide velocidade atual: se enxergou o player, usa boostedSpeed
+        float currentSpeed = speed;
+        if (player != null)
+        {
+            float dist = Vector2.Distance(transform.position, player.position);
+            if (dist <= detectionRange)
+            {
+                currentSpeed = boostedSpeed;
+            }
+        }
 
-        // diminui o timer
+        // movimento lateral (mantÃ©m o comportamento de patrulha)
+        transform.position += new Vector3(direction * currentSpeed * Time.deltaTime, 0, 0);
+
+        // diminui o timer e inverte direÃ§Ã£o quando necessÃ¡rio
         timer -= Time.deltaTime;
-
-        // quando o timer acaba, inverte a direção
         if (timer <= 0f)
         {
             direction *= -1;
             timer = moveTime;
-
-            // vira o sprite também
             sr.flipX = direction < 0;
         }
 
-        // animação de andar
+        // animaÃ§Ã£o de andar
         Animate(walkFrames, true);
     }
 
@@ -69,7 +86,7 @@ public class InimigoBasico : MonoBehaviour
             if (currentFrame >= frames.Length)
             {
                 if (loop) currentFrame = 0;
-                else currentFrame = frames.Length - 1; // trava no último frame (ex: morte)
+                else currentFrame = frames.Length - 1;
             }
 
             sr.sprite = frames[currentFrame];
@@ -85,9 +102,9 @@ public class InimigoBasico : MonoBehaviour
             if (Vida <= 0)
             {
                 isDead = true;
-                currentFrame = -1; // força reset da animação
+                currentFrame = -1; // forÃ§a reset da animaÃ§Ã£o (comeÃ§a do frame 0 depois)
                 GameManager.instance.AddKill();
-                Destroy(gameObject, 0.5f); // tempo pra mostrar animação de morte
+                Destroy(gameObject, 0.5f); // tempo pra mostrar animaÃ§Ã£o de morte
             }
         }
     }
