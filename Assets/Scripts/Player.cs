@@ -20,7 +20,8 @@ public class Player : MonoBehaviour
     [Header("Tiro")]
     public GameObject MunicaoPlayer;
     public Transform PontoDeTiro;
-    
+    public float shootCooldown = 0.8f; // ⬅️ agora o cooldown é maior
+    private float lastShootTime = -10f;
     private Vector2 direcaoTiro = Vector2.right;
 
     [Header("Cooldown de Dano")]
@@ -50,62 +51,60 @@ public class Player : MonoBehaviour
         Respawn = transform.position;
         AtualizarVidasUI();
         TrocarAnimacao(idleFrames);
-
-        Debug.Log("VIDA INICIAL: " + hp.Vida);
-        Debug.Log("NUM CORACOES: " + hp.NumCoracoes);
     }
 
     void Update()
     {
-        if (currentState == State.Die) return; // não faz nada morto
+        if (currentState == State.Die) return;
 
         float move = Input.GetAxisRaw("Horizontal");
 
+        // movimento
         if (onWall && move != 0)
             rb.velocity = new Vector2(0, rb.velocity.y);
         else
             rb.velocity = new Vector2(move * speed, rb.velocity.y);
 
+        // pulo
         if (Input.GetButtonDown("Jump") && isGrounded)
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
+        // morreu
         if (hp.Vida <= 0)
         {
             Morrer();
             return;
         }
 
-        // Direção do tiro (WASD)
-        if (Input.GetKey(KeyCode.W)) direcaoTiro = Vector2.up;
-        else if (Input.GetKey(KeyCode.S)) direcaoTiro = Vector2.down;
-        else if (Input.GetKey(KeyCode.A)) direcaoTiro = Vector2.left;
-        else if (Input.GetKey(KeyCode.D)) direcaoTiro = Vector2.right;
-
-        float angle = Mathf.Atan2(direcaoTiro.y, direcaoTiro.x) * Mathf.Rad2Deg;
-        PontoDeTiro.rotation = Quaternion.Euler(0, 0, angle);
-
-        // Atirar
-        if (Input.GetMouseButtonDown(0))
+        // atualiza flip, direção do tiro e ponto de tiro
+        if (move > 0)
         {
-            Instantiate(MunicaoPlayer, PontoDeTiro.position, PontoDeTiro.rotation);
+            sr.flipX = false;
+            direcaoTiro = Vector2.right;
+            PontoDeTiro.localPosition = new Vector3(Mathf.Abs(PontoDeTiro.localPosition.x), PontoDeTiro.localPosition.y, 0);
+        }
+        else if (move < 0)
+        {
+            sr.flipX = true;
+            direcaoTiro = Vector2.left;
+            PontoDeTiro.localPosition = new Vector3(-Mathf.Abs(PontoDeTiro.localPosition.x), PontoDeTiro.localPosition.y, 0);
+        }
+
+        // atirar com cooldown
+        if (Input.GetMouseButtonDown(0) && Time.time - lastShootTime >= shootCooldown)
+        {
+            Instantiate(MunicaoPlayer, PontoDeTiro.position, Quaternion.identity);
             SetState(State.Shoot);
+            lastShootTime = Time.time;
         }
 
         // === Atualiza animação ===
-        if (currentState != State.Shoot) // tiro não é interrompido até acabar
+        if (currentState != State.Shoot)
         {
             if (!isGrounded)
                 SetState(State.Jump);
             else if (move != 0)
-            {
                 SetState(State.Walk);
-                sr.flipX = move < 0;
-
-                // Espelha o ponto de tiro junto com o sprite
-                Vector3 pos = PontoDeTiro.localPosition;
-                pos.x = Mathf.Abs(pos.x) * (sr.flipX ? -1 : 1);
-                PontoDeTiro.localPosition = pos;
-            }
             else
                 SetState(State.Idle);
         }
@@ -148,14 +147,12 @@ public class Player : MonoBehaviour
             frameTimer = 0f;
             currentFrame++;
 
-            // animação de tiro volta para Idle no fim
             if (currentState == State.Shoot && currentFrame >= currentAnimation.Length)
             {
                 SetState(State.Idle);
                 return;
             }
 
-            // animação de morte para no último frame
             if (currentState == State.Die && currentFrame >= currentAnimation.Length)
             {
                 currentFrame = currentAnimation.Length - 1;
@@ -169,7 +166,7 @@ public class Player : MonoBehaviour
     {
         rb.velocity = Vector2.zero;
         SetState(State.Die);
-        Invoke(nameof(RespawnPlayer), 1.5f); // respawn depois de 1.5s (ou troca cena)
+        Invoke(nameof(RespawnPlayer), 1.5f);
     }
 
     public void RespawnPlayer()
@@ -203,7 +200,8 @@ public class Player : MonoBehaviour
             isGrounded = true;
 
         if (collision.gameObject.CompareTag("Wall"))
-            GetComponent<Collider2D>().sharedMaterial = new PhysicsMaterial2D() { friction = 0, bounciness = 0 };
+            GetComponent<Collider2D>().sharedMaterial =
+                new PhysicsMaterial2D() { friction = 0, bounciness = 0 };
     }
 
     private void OnCollisionExit2D(Collision2D collision)
@@ -230,17 +228,15 @@ public class Player : MonoBehaviour
                 hp.Vida--;
                 lastDamageTime = Time.time;
             }
-            else if (other.CompareTag("Trap")) // 👈 dano vindo da Trap
+            else if (other.CompareTag("Trap"))
             {
                 hp.Vida--;
                 lastDamageTime = Time.time;
 
-                // Knockback (empurra pra trás + um pulinho)
+                // knockback
                 Vector2 knockbackDir = (transform.position - other.transform.position).normalized;
                 rb.velocity = new Vector2(knockbackDir.x * 5f, 5f);
-                // ajuste os valores (5f, 5f) conforme achar melhor
             }
         }
     }
-
 }
