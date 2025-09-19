@@ -20,9 +20,11 @@ public class Player : MonoBehaviour
     [Header("Tiro")]
     public GameObject MunicaoPlayer;
     public Transform PontoDeTiro;
-    public float shootCooldown = 0.8f; // ⬅️ agora o cooldown é maior
+    public float shootCooldown = 0.8f;
     private float lastShootTime = -10f;
     private Vector2 direcaoTiro = Vector2.right;
+    public float bulletSpeed = 10f; // velocidade da bala
+    public float bulletLifeTime = 3f; // tempo pra destruir a bala
 
     [Header("Cooldown de Dano")]
     public float damageCooldown = 1f;
@@ -93,7 +95,16 @@ public class Player : MonoBehaviour
         // atirar com cooldown
         if (Input.GetMouseButtonDown(0) && Time.time - lastShootTime >= shootCooldown)
         {
-            Instantiate(MunicaoPlayer, PontoDeTiro.position, Quaternion.identity);
+            GameObject bala = Instantiate(MunicaoPlayer, PontoDeTiro.position, Quaternion.identity);
+
+            Rigidbody2D rbBala = bala.GetComponent<Rigidbody2D>();
+            if (rbBala != null)
+            {
+                rbBala.velocity = direcaoTiro * bulletSpeed;
+            }
+
+            Destroy(bala, bulletLifeTime); // destrói a bala após X segundos
+
             SetState(State.Shoot);
             lastShootTime = Time.time;
         }
@@ -196,7 +207,7 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("PlataformaFinal"))
             isGrounded = true;
 
         if (collision.gameObject.CompareTag("Wall"))
@@ -206,7 +217,7 @@ public class Player : MonoBehaviour
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("PlataformaFinal"))
             isGrounded = false;
 
         if (collision.gameObject.CompareTag("Wall"))
@@ -233,10 +244,15 @@ public class Player : MonoBehaviour
                 hp.Vida--;
                 lastDamageTime = Time.time;
 
-                // knockback
                 Vector2 knockbackDir = (transform.position - other.transform.position).normalized;
                 rb.velocity = new Vector2(knockbackDir.x * 5f, 5f);
             }
         }
+    }
+
+    public void SetRespawnPoint(Vector2 newRespawn)
+    {
+        Respawn = newRespawn;
+        Debug.Log("[Player] Respawn point set to: " + newRespawn);
     }
 }

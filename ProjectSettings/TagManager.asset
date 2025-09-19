@@ -12,6 +12,8 @@ TagManager:
   - EnemieShotter
   - Trap
   - Final
+  - PlataformaFinal
+  - Gerador
   layers:
   - Default
   - TransparentFX
