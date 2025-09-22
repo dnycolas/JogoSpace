@@ -3,6 +3,9 @@ using TMPro;
 
 public class Player : MonoBehaviour
 {
+    public AudioSource Au;
+    public AudioClip Aclip;
+
     [Header("Movimento")]
     public float speed = 5f;
     public float jumpForce = 10f;
@@ -96,6 +99,9 @@ public class Player : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && Time.time - lastShootTime >= shootCooldown)
         {
             GameObject bala = Instantiate(MunicaoPlayer, PontoDeTiro.position, Quaternion.identity);
+
+            Au.clip = Aclip;
+            Au.PlayOneShot(Aclip);
 
             Rigidbody2D rbBala = bala.GetComponent<Rigidbody2D>();
             if (rbBala != null)

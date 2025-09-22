@@ -42,9 +42,11 @@ public class MunicaoSeguidora : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player") || other.CompareTag("Wall"))
+        if (other.CompareTag("Player") || other.CompareTag("Wall")  || other.CompareTag("Ground") || other.CompareTag("ShotPlayer"))
         {
             Destroy(gameObject);
         }
     }
+
+
 }

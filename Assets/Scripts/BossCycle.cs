@@ -1,7 +1,13 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BossCycle : MonoBehaviour
 {
+    [Header("Vida")]
+    public float Vida = 20; // vida do boss
+    public Sprite[] deathFrames;
+    private bool isDead = false;
+
     [Header("Movimento")]
     public float walkSpeed = 2f;
     public float fastSpeed = 4f;
@@ -45,6 +51,9 @@ public class BossCycle : MonoBehaviour
     private bool reachedBottom = false;
     private float bottomWaitTimer = 0f;
 
+    private enum State { Alive, Death }
+    private State currentState = State.Alive;
+
     void Start()
     {
         sr = GetComponent<SpriteRenderer>();
@@ -54,6 +63,12 @@ public class BossCycle : MonoBehaviour
 
     void Update()
     {
+        if (currentState == State.Death) // não faz nada se estiver morto
+        {
+            Animate();
+            return;
+        }
+
         stateTimer -= Time.deltaTime;
 
         // troca de estágio
@@ -175,7 +190,6 @@ public class BossCycle : MonoBehaviour
 
         if (MisselTeleguiadoPrefab != null && spawnPoint != null)
         {
-            // adiciona 3 unidades no Y
             Vector3 spawnPos = spawnPoint.position + new Vector3(0, 3f, 0);
             GameObject missile = Instantiate(MisselTeleguiadoPrefab, spawnPos, Quaternion.identity);
         }
@@ -194,4 +208,25 @@ public class BossCycle : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (currentState == State.Death) return;
+
+        if (other.CompareTag("ShotPlayer"))
+        {
+            Vida--;
+
+            if (Vida <= 0)
+            {
+                currentState = State.Death;
+                currentAnimation = deathFrames;
+                currentFrame = -1;
+                frameTimer = frameRate;
+                GameManager.instance.AddKill();
+                Destroy(gameObject, 1f); // espera 1 segundo pra animação de morte
+
+                SceneManager.LoadScene("GameOver");
+            }
+        }
+    }
 }
